@@ -772,16 +772,6 @@ namespace GitCredentialManager.Authentication
             Context.Trace.WriteLine($"[{level.ToString()}] {message}", memberName: "MSAL");
         }
 
-        private bool TryFindHelperCommand(out string command, out string args)
-        {
-            return TryFindHelperCommand(
-                Constants.EnvironmentVariables.GcmUiHelper,
-                Constants.GitConfiguration.Credential.UiHelper,
-                Constants.DefaultUiHelper,
-                out command,
-                out args);
-        }
-
         private class MsalHttpClientFactoryAdaptor : IMsalHttpClientFactory
         {
             private readonly IHttpClientFactory _factory;

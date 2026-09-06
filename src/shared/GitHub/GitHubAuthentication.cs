@@ -528,7 +528,7 @@ namespace GitHub
             return InvokeHelperAsync(command, promptArgs.ToString(), null, ct);
         }
 
-        private bool TryFindHelperCommand(out string command, out string args)
+        private new bool TryFindHelperCommand(out string command, out string args)
         {
             return TryFindHelperCommand(
                 GitHubConstants.EnvironmentVariables.AuthenticationHelper,
@@ -536,14 +536,6 @@ namespace GitHub
                 GitHubConstants.DefaultAuthenticationHelper,
                 out command,
                 out args);
-        }
-
-        private HttpClient _httpClient;
-        private HttpClient HttpClient => _httpClient ?? (_httpClient = Context.HttpClientFactory.CreateClient());
-
-        public void Dispose()
-        {
-            _httpClient?.Dispose();
         }
     }
 }

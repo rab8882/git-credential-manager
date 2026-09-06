@@ -121,14 +121,5 @@ namespace GitCredentialManager.Authentication
             return new GitCredential(userName, password);
         }
 
-        private bool TryFindHelperCommand(out string command, out string args)
-        {
-            return TryFindHelperCommand(
-                Constants.EnvironmentVariables.GcmUiHelper,
-                Constants.GitConfiguration.Credential.UiHelper,
-                Constants.DefaultUiHelper,
-                out command,
-                out args);
-        }
     }
 }

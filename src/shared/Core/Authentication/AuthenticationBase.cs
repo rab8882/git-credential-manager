@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using GitCredentialManager.UI.ViewModels;
 
 namespace GitCredentialManager.Authentication
 {
-    public abstract class AuthenticationBase
+    public abstract class AuthenticationBase : IDisposable
     {
         protected readonly ICommandContext Context;
 
@@ -18,6 +19,19 @@ namespace GitCredentialManager.Authentication
             EnsureArgument.NotNull(context, nameof(context));
 
             Context = context;
+        }
+
+        private HttpClient _httpClient;
+
+        /// <summary>
+        /// A lazily-created <see cref="System.Net.Http.HttpClient"/> for this authentication component,
+        /// created from <see cref="ICommandContext.HttpClientFactory"/>.
+        /// </summary>
+        protected HttpClient HttpClient => _httpClient ??= Context.HttpClientFactory.CreateClient();
+
+        public virtual void Dispose()
+        {
+            _httpClient?.Dispose();
         }
 
         protected Task<IDictionary<string, string>> InvokeHelperAsync(string path, string args,
@@ -134,6 +148,26 @@ namespace GitCredentialManager.Authentication
             }
 
             return IntPtr.Zero;
+        }
+
+        /// <summary>
+        /// Find the configured UI helper command using the default, generic UI helper settings
+        /// (<see cref="Constants.EnvironmentVariables.GcmUiHelper"/> and
+        /// <see cref="Constants.GitConfiguration.Credential.UiHelper"/>).
+        /// </summary>
+        /// <remarks>
+        /// Providers with their own UI helper override envar/configuration name/default value should
+        /// declare their own <c>TryFindHelperCommand(out string, out string)</c> method that forwards to
+        /// <see cref="TryFindHelperCommand(string,string,string,out string,out string)"/> with their own values.
+        /// </remarks>
+        protected bool TryFindHelperCommand(out string command, out string args)
+        {
+            return TryFindHelperCommand(
+                Constants.EnvironmentVariables.GcmUiHelper,
+                Constants.GitConfiguration.Credential.UiHelper,
+                Constants.DefaultUiHelper,
+                out command,
+                out args);
         }
 
         protected bool TryFindHelperCommand(string envar, string configName, string defaultValue, out string command, out string args)

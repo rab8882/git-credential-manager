@@ -28,47 +28,31 @@ namespace GitHub
 
         private static string GetClientId(ISettings settings)
         {
-            // Check for developer override value
-            if (settings.TryGetSetting(
+            return settings.GetDevOverrideOrDefault(
                 GitHubConstants.EnvironmentVariables.DevOAuthClientId,
-                Constants.GitConfiguration.Credential.SectionName, GitHubConstants.GitConfiguration.Credential.DevOAuthClientId,
-                out string clientId))
-            {
-                return clientId;
-            }
-
-            return GitHubConstants.OAuthClientId;
+                GitHubConstants.GitConfiguration.Credential.DevOAuthClientId,
+                GitHubConstants.OAuthClientId);
         }
 
         private static Uri GetRedirectUri(ISettings settings, Uri targetUri)
         {
-            // Check for developer override value
-            if (settings.TryGetSetting(
-                GitHubConstants.EnvironmentVariables.DevOAuthRedirectUri,
-                Constants.GitConfiguration.Credential.SectionName, GitHubConstants.GitConfiguration.Credential.DevOAuthRedirectUri,
-                out string redirectUriStr) && Uri.TryCreate(redirectUriStr, UriKind.Absolute, out Uri redirectUri))
-            {
-                return redirectUri;
-            }
-
             // Only GitHub.com supports the new OAuth redirect URI today
-            return GitHubHostProvider.IsGitHubDotCom(targetUri)
+            Uri defaultRedirectUri = GitHubHostProvider.IsGitHubDotCom(targetUri)
                 ? GitHubConstants.OAuthRedirectUri
                 : GitHubConstants.OAuthLegacyRedirectUri;
+
+            return settings.GetDevOverrideUriOrDefault(
+                GitHubConstants.EnvironmentVariables.DevOAuthRedirectUri,
+                GitHubConstants.GitConfiguration.Credential.DevOAuthRedirectUri,
+                defaultRedirectUri);
         }
 
         private static string GetClientSecret(ISettings settings)
         {
-            // Check for developer override value
-            if (settings.TryGetSetting(
+            return settings.GetDevOverrideOrDefault(
                 GitHubConstants.EnvironmentVariables.DevOAuthClientSecret,
-                Constants.GitConfiguration.Credential.SectionName, GitHubConstants.GitConfiguration.Credential.DevOAuthClientSecret,
-                out string clientSecret))
-            {
-                return clientSecret;
-            }
-
-            return GitHubConstants.OAuthClientSecret;
+                GitHubConstants.GitConfiguration.Credential.DevOAuthClientSecret,
+                GitHubConstants.OAuthClientSecret);
         }
     }
 }
