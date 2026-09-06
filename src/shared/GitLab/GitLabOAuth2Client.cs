@@ -22,45 +22,27 @@ namespace GitLab
 
         private static Uri GetRedirectUri(ISettings settings)
         {
-            // Check for developer override value
-            if (settings.TryGetSetting(
+            return settings.GetDevOverrideUriOrDefault(
                 GitLabConstants.EnvironmentVariables.DevOAuthRedirectUri,
-                Constants.GitConfiguration.Credential.SectionName, GitLabConstants.GitConfiguration.Credential.DevOAuthRedirectUri,
-                out string redirectUriStr) && Uri.TryCreate(redirectUriStr, UriKind.Absolute, out Uri redirectUri))
-            {
-                return redirectUri;
-            }
-
-            return GitLabConstants.OAuthRedirectUri;
+                GitLabConstants.GitConfiguration.Credential.DevOAuthRedirectUri,
+                GitLabConstants.OAuthRedirectUri);
         }
 
         internal static string GetClientId(ISettings settings)
         {
-            // Check for developer override value
-            if (settings.TryGetSetting(
+            return settings.GetDevOverrideOrDefault(
                 GitLabConstants.EnvironmentVariables.DevOAuthClientId,
-                Constants.GitConfiguration.Credential.SectionName, GitLabConstants.GitConfiguration.Credential.DevOAuthClientId,
-                out string clientId))
-            {
-                return clientId;
-            }
-
-            return GitLabConstants.OAuthClientId;
+                GitLabConstants.GitConfiguration.Credential.DevOAuthClientId,
+                GitLabConstants.OAuthClientId);
         }
 
         private static string GetClientSecret(ISettings settings)
         {
-            // Check for developer override value
-            if (settings.TryGetSetting(
+            // no secret necessary by default
+            return settings.GetDevOverrideOrDefault(
                 GitLabConstants.EnvironmentVariables.DevOAuthClientSecret,
-                Constants.GitConfiguration.Credential.SectionName, GitLabConstants.GitConfiguration.Credential.DevOAuthClientSecret,
-                out string clientSecret))
-            {
-                return clientSecret;
-            }
-
-            // no secret necessary
-            return null;
+                GitLabConstants.GitConfiguration.Credential.DevOAuthClientSecret,
+                defaultValue: null);
         }
     }
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -278,7 +277,7 @@ namespace Atlassian.Bitbucket
             return client.GetRefreshTokenServiceName(input);
         }
 
-        protected internal virtual bool TryFindHelperCommand(out string command, out string args)
+        protected internal new virtual bool TryFindHelperCommand(out string command, out string args)
         {
             return TryFindHelperCommand(
                 BitbucketConstants.EnvironmentVariables.AuthenticationHelper,
@@ -286,14 +285,6 @@ namespace Atlassian.Bitbucket
                 BitbucketConstants.DefaultAuthenticationHelper,
                 out command,
                 out args);
-        }
-
-        private HttpClient _httpClient;
-        private HttpClient HttpClient => _httpClient ??= Context.HttpClientFactory.CreateClient();
-
-        public void Dispose()
-        {
-            _httpClient?.Dispose();
         }
     }
 }

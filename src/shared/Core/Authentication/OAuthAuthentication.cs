@@ -273,15 +273,5 @@ namespace GitCredentialManager.Authentication
 
             return await client.GetTokenByDeviceCodeAsync(dcr, CancellationToken.None);
         }
-
-        private bool TryFindHelperCommand(out string command, out string args)
-        {
-            return TryFindHelperCommand(
-                Constants.EnvironmentVariables.GcmUiHelper,
-                Constants.GitConfiguration.Credential.UiHelper,
-                Constants.DefaultUiHelper,
-                out command,
-                out args);
-        }
     }
 }

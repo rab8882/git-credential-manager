@@ -291,7 +291,7 @@ namespace GitLab
             return await oauthClient.GetTokenByRefreshTokenAsync(refreshToken, CancellationToken.None);
         }
 
-        private bool TryFindHelperCommand(out string command, out string args)
+        private new bool TryFindHelperCommand(out string command, out string args)
         {
             return TryFindHelperCommand(
                 GitLabConstants.EnvironmentVariables.AuthenticationHelper,
@@ -299,14 +299,6 @@ namespace GitLab
                 GitLabConstants.DefaultAuthenticationHelper,
                 out command,
                 out args);
-        }
-
-        private HttpClient _httpClient;
-        private HttpClient HttpClient => _httpClient ?? (_httpClient = Context.HttpClientFactory.CreateClient());
-
-        public void Dispose()
-        {
-            _httpClient?.Dispose();
         }
     }
 }
