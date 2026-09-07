@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using GitHub.Diagnostics;
@@ -230,8 +231,8 @@ namespace GitHub
                 return true;
             }
             catch (HttpRequestException ex) when (
-                ex.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
-                ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                ex.StatusCode == HttpStatusCode.Unauthorized ||
+                ex.StatusCode == HttpStatusCode.Forbidden)
             {
                 // The API explicitly rejected the credential as unauthenticated/unauthorized -
                 // the token has genuinely expired or been revoked.

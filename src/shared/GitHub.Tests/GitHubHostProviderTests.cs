@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using GitCredentialManager;
@@ -236,7 +237,7 @@ namespace GitHub.Tests
 
             var ghApiMock = new Mock<IGitHubRestApi>(MockBehavior.Strict);
             ghApiMock.Setup(x => x.GetUserInfoAsync(new Uri("https://github.com"), "expired-password"))
-                     .ThrowsAsync(new HttpRequestException("401 Unauthorized", null, System.Net.HttpStatusCode.Unauthorized));
+                     .ThrowsAsync(new HttpRequestException("401 Unauthorized", null, HttpStatusCode.Unauthorized));
 
             var ghAuthMock = new Mock<IGitHubAuthentication>(MockBehavior.Strict);
             ghAuthMock.Setup(x => x.GetAuthenticationAsync(
