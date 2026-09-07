@@ -236,7 +236,7 @@ namespace GitHub.Tests
 
             var ghApiMock = new Mock<IGitHubRestApi>(MockBehavior.Strict);
             ghApiMock.Setup(x => x.GetUserInfoAsync(new Uri("https://github.com"), "expired-password"))
-                     .ThrowsAsync(new HttpRequestException("401 Unauthorized"));
+                     .ThrowsAsync(new HttpRequestException("401 Unauthorized", null, System.Net.HttpStatusCode.Unauthorized));
 
             var ghAuthMock = new Mock<IGitHubAuthentication>(MockBehavior.Strict);
             ghAuthMock.Setup(x => x.GetAuthenticationAsync(
@@ -286,6 +286,39 @@ namespace GitHub.Tests
             Assert.NotNull(result);
             Assert.Equal("alice", result.Account);
             Assert.Equal("letmein123", result.Password);
+        }
+
+        [Fact]
+        public async Task GitHubHostProvider_GetCredentialAsync_InputUser_ValidationNetworkError_KeepsCredential()
+        {
+            var input = new InputArguments(
+                new Dictionary<string, string>
+                {
+                    ["protocol"] = "https",
+                    ["host"]     = "github.com",
+                    ["username"] = "alice"
+                }
+            );
+
+            var context = new TestCommandContext();
+            context.CredentialStore.Add("https://github.com", "alice", "letmein123");
+
+            var ghApiMock = new Mock<IGitHubRestApi>(MockBehavior.Strict);
+            ghApiMock.Setup(x => x.GetUserInfoAsync(new Uri("https://github.com"), "letmein123"))
+                     .ThrowsAsync(new HttpRequestException("Network error"));
+
+            var ghAuthMock = new Mock<IGitHubAuthentication>(MockBehavior.Strict);
+
+            var provider = new GitHubHostProvider(context, ghApiMock.Object, ghAuthMock.Object);
+
+            ICredential result = await provider.GetCredentialAsync(input);
+
+            // A network error (as opposed to an explicit 401/403 rejection) should not cause the
+            // credential to be erased and re-authentication to be forced.
+            Assert.NotNull(result);
+            Assert.Equal("alice", result.Account);
+            Assert.Equal("letmein123", result.Password);
+            Assert.True(context.CredentialStore.Contains("https://github.com", "alice"));
         }
 
         [Fact]

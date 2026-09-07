@@ -229,13 +229,29 @@ namespace GitHub
                 _context.Trace.WriteLine("Stored credential is valid.");
                 return true;
             }
-            catch (Exception ex)
+            catch (HttpRequestException ex) when (
+                ex.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
+                ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
             {
-                const string message = "Failed to validate stored credential for GitHub";
+                // The API explicitly rejected the credential as unauthenticated/unauthorized -
+                // the token has genuinely expired or been revoked.
+                const string message = "Stored credential for GitHub was rejected as invalid";
                 _context.Trace.WriteLine(message);
                 _context.Trace.WriteException(ex);
                 _context.Trace2.WriteError(message);
                 return false;
+            }
+            catch (Exception ex)
+            {
+                // We could not conclusively determine that the credential is invalid (for example,
+                // due to a network error or an unexpected server response). Rather than force the
+                // user through interactive authentication unnecessarily, assume the credential is
+                // still valid and let Git surface any real failure.
+                const string message = "Failed to validate stored credential for GitHub due to an unexpected error; assuming it is still valid";
+                _context.Trace.WriteLine(message);
+                _context.Trace.WriteException(ex);
+                _context.Trace2.WriteError(message);
+                return true;
             }
         }
 
