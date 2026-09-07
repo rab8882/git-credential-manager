@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Threading.Tasks;
 using GitCredentialManager;
 using GitCredentialManager.Authentication.OAuth;
@@ -203,6 +204,79 @@ namespace GitHub.Tests
             context.CredentialStore.Add("https://github.com", "bob", "secret123");
 
             var ghApiMock = new Mock<IGitHubRestApi>(MockBehavior.Strict);
+            ghApiMock.Setup(x => x.GetUserInfoAsync(new Uri("https://github.com"), "letmein123"))
+                     .ReturnsAsync(new GitHubUserInfo { Login = "alice" });
+            var ghAuthMock = new Mock<IGitHubAuthentication>(MockBehavior.Strict);
+
+            var provider = new GitHubHostProvider(context, ghApiMock.Object, ghAuthMock.Object);
+
+            ICredential result = await provider.GetCredentialAsync(input);
+
+            Assert.NotNull(result);
+            Assert.Equal("alice", result.Account);
+            Assert.Equal("letmein123", result.Password);
+        }
+
+        [Fact]
+        public async Task GitHubHostProvider_GetCredentialAsync_InputUser_ExpiredToken_ErasesAndPromptsUser()
+        {
+            var input = new InputArguments(
+                new Dictionary<string, string>
+                {
+                    ["protocol"] = "https",
+                    ["host"]     = "github.com",
+                    ["username"] = "alice"
+                }
+            );
+
+            var newCredential = new GitCredential("alice", "new-password");
+
+            var context = new TestCommandContext();
+            context.CredentialStore.Add("https://github.com", "alice", "expired-password");
+
+            var ghApiMock = new Mock<IGitHubRestApi>(MockBehavior.Strict);
+            ghApiMock.Setup(x => x.GetUserInfoAsync(new Uri("https://github.com"), "expired-password"))
+                     .ThrowsAsync(new HttpRequestException("401 Unauthorized"));
+
+            var ghAuthMock = new Mock<IGitHubAuthentication>(MockBehavior.Strict);
+            ghAuthMock.Setup(x => x.GetAuthenticationAsync(
+                    It.IsAny<Uri>(), "alice", It.IsAny<AuthenticationModes>()))
+                .ReturnsAsync(new AuthenticationPromptResult(AuthenticationModes.Pat, newCredential));
+
+            var provider = new GitHubHostProvider(context, ghApiMock.Object, ghAuthMock.Object);
+
+            ICredential result = await provider.GetCredentialAsync(input);
+
+            Assert.NotNull(result);
+            Assert.Equal(newCredential.Account, result.Account);
+            Assert.Equal(newCredential.Password, result.Password);
+
+            // The expired credential should have been removed from the store
+            Assert.False(context.CredentialStore.Contains("https://github.com", "alice"));
+
+            ghAuthMock.Verify(x => x.GetAuthenticationAsync(
+                    new Uri("https://github.com"), "alice", It.IsAny<AuthenticationModes>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task GitHubHostProvider_GetCredentialAsync_InputUser_ValidationDisabled_SkipsValidation()
+        {
+            var input = new InputArguments(
+                new Dictionary<string, string>
+                {
+                    ["protocol"] = "https",
+                    ["host"]     = "github.com",
+                    ["username"] = "alice"
+                }
+            );
+
+            var context = new TestCommandContext();
+            context.Environment.Variables[GitHubConstants.EnvironmentVariables.ValidateStoredCredentials] = "false";
+            context.CredentialStore.Add("https://github.com", "alice", "letmein123");
+
+            // Strict mock with no setups: GetUserInfoAsync must not be called
+            var ghApiMock = new Mock<IGitHubRestApi>(MockBehavior.Strict);
             var ghAuthMock = new Mock<IGitHubAuthentication>(MockBehavior.Strict);
 
             var provider = new GitHubHostProvider(context, ghApiMock.Object, ghAuthMock.Object);
@@ -232,6 +306,8 @@ namespace GitHub.Tests
             context.CredentialStore.Add("https://github.com", "test_fabrikam", "hidden_value");
 
             var ghApiMock = new Mock<IGitHubRestApi>(MockBehavior.Strict);
+            ghApiMock.Setup(x => x.GetUserInfoAsync(new Uri("https://github.com"), "secret123"))
+                     .ReturnsAsync(new GitHubUserInfo { Login = "bob_contoso" });
             var ghAuthMock = new Mock<IGitHubAuthentication>(MockBehavior.Strict);
 
             var provider = new GitHubHostProvider(context, ghApiMock.Object, ghAuthMock.Object);
@@ -261,6 +337,8 @@ namespace GitHub.Tests
             context.CredentialStore.Add("https://github.com", "john_contoso", "who_knows");
 
             var ghApiMock = new Mock<IGitHubRestApi>(MockBehavior.Strict);
+            ghApiMock.Setup(x => x.GetUserInfoAsync(new Uri("https://github.com"), "who_knows"))
+                     .ReturnsAsync(new GitHubUserInfo { Login = "john_contoso" });
             var ghAuthMock = new Mock<IGitHubAuthentication>(MockBehavior.Strict);
 
             ghAuthMock.Setup(x => x.SelectAccountAsync(It.IsAny<Uri>(), It.IsAny<IEnumerable<string>>()))

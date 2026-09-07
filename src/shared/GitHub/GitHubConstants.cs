@@ -67,6 +67,7 @@ namespace GitHub
             public const string DevOAuthClientSecret = "GCM_DEV_GITHUB_CLIENTSECRET";
             public const string DevOAuthRedirectUri = "GCM_DEV_GITHUB_REDIRECTURI";
             public const string AccountFiltering = "GCM_GITHUB_ACCOUNTFILTERING";
+            public const string ValidateStoredCredentials = "GCM_GITHUB_VALIDATE_STORED_CREDENTIALS";
         }
 
         public static class GitConfiguration
@@ -79,6 +80,7 @@ namespace GitHub
                 public const string DevOAuthClientSecret = "gitHubDevClientSecret";
                 public const string DevOAuthRedirectUri = "gitHubDevRedirectUri";
                 public const string AccountFiltering = "githubAccountFiltering";
+                public const string ValidateStoredCredentials = "gitHubValidateStoredCredentials";
             }
         }
     }
