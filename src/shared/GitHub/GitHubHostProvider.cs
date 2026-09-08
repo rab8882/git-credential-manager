@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using GitHub.Diagnostics;
@@ -512,6 +513,12 @@ namespace GitHub
             }
 
             return uri;
+        }
+
+        private static bool IsCredentialInvalidResponse(HttpRequestException ex)
+        {
+            return ex.StatusCode == HttpStatusCode.Unauthorized ||
+                   ex.StatusCode == HttpStatusCode.Forbidden;
         }
 
         #endregion
