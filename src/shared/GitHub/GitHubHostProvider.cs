@@ -517,8 +517,13 @@ namespace GitHub
 
         private static bool IsCredentialInvalidResponse(HttpRequestException ex)
         {
+#if NETFRAMEWORK
+            // HttpRequestException does not expose a StatusCode property on .NET Framework
+            return false;
+#else
             return ex.StatusCode == HttpStatusCode.Unauthorized ||
                    ex.StatusCode == HttpStatusCode.Forbidden;
+#endif
         }
 
         #endregion
