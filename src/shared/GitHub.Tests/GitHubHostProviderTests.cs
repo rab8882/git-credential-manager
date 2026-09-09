@@ -237,7 +237,7 @@ namespace GitHub.Tests
 
             var ghApiMock = new Mock<IGitHubRestApi>(MockBehavior.Strict);
             ghApiMock.Setup(x => x.GetUserInfoAsync(new Uri("https://github.com"), "expired-password"))
-                     .ThrowsAsync(new HttpRequestException("401 Unauthorized", null, HttpStatusCode.Unauthorized));
+                     .ThrowsAsync(new GitHubHttpResponseException(HttpStatusCode.Unauthorized));
 
             var ghAuthMock = new Mock<IGitHubAuthentication>(MockBehavior.Strict);
             ghAuthMock.Setup(x => x.GetAuthenticationAsync(

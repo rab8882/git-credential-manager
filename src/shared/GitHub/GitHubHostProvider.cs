@@ -230,9 +230,7 @@ namespace GitHub
                 _context.Trace.WriteLine("Stored credential is valid.");
                 return true;
             }
-            catch (HttpRequestException ex) when (
-                ex.StatusCode == HttpStatusCode.Unauthorized ||
-                ex.StatusCode == HttpStatusCode.Forbidden)
+            catch (GitHubHttpResponseException ex)
             {
                 // The API explicitly rejected the credential as unauthenticated/unauthorized -
                 // the token has genuinely expired or been revoked.
