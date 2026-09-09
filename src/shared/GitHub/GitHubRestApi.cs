@@ -102,6 +102,12 @@ namespace GitHub
                 {
                     _context.Trace.WriteLine($"HTTP: Response {(int) response.StatusCode} [{response.StatusCode}]");
 
+                    if (response.StatusCode == HttpStatusCode.Unauthorized ||
+                        response.StatusCode == HttpStatusCode.Forbidden)
+                    {
+                        throw new GitHubHttpResponseException(response.StatusCode);
+                    }
+
                     response.EnsureSuccessStatusCode();
 
                     string json = await response.Content.ReadAsStringAsync();

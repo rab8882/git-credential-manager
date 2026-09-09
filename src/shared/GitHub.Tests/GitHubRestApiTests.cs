@@ -244,6 +244,32 @@ namespace GitHub.Tests
         }
 
         [Fact]
+        public async Task GitHubRestApi_GetUserInfoAsync_Unauthorized_ThrowsGitHubHttpResponseException()
+        {
+            const string accessToken = "GITHUB_TOKEN_VALUE";
+
+            var context = new TestCommandContext();
+            var uri = new Uri("https://github.com");
+            var expectedRequestUri = new Uri("https://api.github.com/user");
+
+            var httpHandler = new TestHttpMessageHandler {ThrowOnUnexpectedRequest = true};
+            httpHandler.Setup(HttpMethod.Get, expectedRequestUri, request =>
+            {
+                RestTestUtilities.AssertBearerAuth(request, accessToken);
+                return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            });
+
+            context.HttpClientFactory.MessageHandler = httpHandler;
+            var api = new GitHubRestApi(context);
+
+            var exception = await Assert.ThrowsAsync<GitHubHttpResponseException>(
+                () => api.GetUserInfoAsync(uri, accessToken)
+            );
+
+            Assert.Equal(HttpStatusCode.Unauthorized, exception.StatusCode);
+        }
+
+        [Fact]
         public async Task GitHubRestApi_AcquireTokenAsync_ValidOAuthToken_ReturnsOAuthToken()
         {
             const string testUserName = "john.doe";

@@ -177,6 +177,14 @@ namespace GitHub
                 credential = _context.CredentialStore.Get(service, userName);
             }
 
+            if (credential != null && !await ValidateStoredCredentialAsync(remoteUri, credential))
+            {
+                _context.Trace.WriteLine("Existing credential failed validation - removing from store.");
+                _context.CredentialStore.Remove(service, credential.Account);
+                userName = credential.Account;
+                credential = null;
+            }
+
             if (credential == null)
             {
                 _context.Trace.WriteLine("No existing credentials found.");
@@ -192,6 +200,58 @@ namespace GitHub
             }
 
             return credential;
+        }
+
+        /// <summary>
+        /// Validate that a stored credential is still usable by making an authenticated call
+        /// to the GitHub API (<c>GET /user</c>). This catches tokens that have expired or been
+        /// revoked since they were stored, so that we can fall back to interactive authentication
+        /// rather than handing back a credential that Git will simply fail to use.
+        /// </summary>
+        private async Task<bool> ValidateStoredCredentialAsync(Uri remoteUri, ICredential credential)
+        {
+            if (_context.Settings.TryGetSetting(
+                    GitHubConstants.EnvironmentVariables.ValidateStoredCredentials,
+                    Constants.GitConfiguration.Credential.SectionName,
+                    GitHubConstants.GitConfiguration.Credential.ValidateStoredCredentials,
+                    out string validateStoredCredentialsStr)
+                && !validateStoredCredentialsStr.ToBooleanyOrDefault(true))
+            {
+                _context.Trace.WriteLine("Skipping validation of stored credential due to " +
+                    $"{GitHubConstants.GitConfiguration.Credential.ValidateStoredCredentials} = {validateStoredCredentialsStr}");
+                return true;
+            }
+
+            _context.Trace.WriteLine($"Validating stored credential for '{remoteUri}' is still usable...");
+
+            try
+            {
+                await _gitHubApi.GetUserInfoAsync(remoteUri, credential.Password);
+                _context.Trace.WriteLine("Stored credential is valid.");
+                return true;
+            }
+            catch (GitHubHttpResponseException ex)
+            {
+                // The API explicitly rejected the credential as unauthenticated/unauthorized -
+                // the token has genuinely expired or been revoked.
+                const string message = "Stored credential for GitHub was rejected as invalid";
+                _context.Trace.WriteLine(message);
+                _context.Trace.WriteException(ex);
+                _context.Trace2.WriteError(message);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                // We could not conclusively determine that the credential is invalid (for example,
+                // due to a network error or an unexpected server response). Rather than force the
+                // user through interactive authentication unnecessarily, assume the credential is
+                // still valid and let Git surface any real failure.
+                const string message = "Failed to validate stored credential for GitHub due to an unexpected error; assuming it is still valid";
+                _context.Trace.WriteLine(message);
+                _context.Trace.WriteException(ex);
+                _context.Trace2.WriteError(message);
+                return true;
+            }
         }
 
         private bool FilterAccounts(Uri remoteUri, IEnumerable<string> wwwAuth, ref IList<string> accounts)
